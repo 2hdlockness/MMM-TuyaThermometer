@@ -5,6 +5,11 @@
   "main": "MMM-TuyaThermometer.js",
   "author": "@bugsounet",
   "license": "MIT",
+  "scripts": {
+    "preinstall": "installer/preinstall.sh",
+    "postinstall": "installer/postinstall.sh",
+    "update": "installer/update.sh"
+  },
   "dependencies": {
     "axios": "^0.27.2",
     "crypto": "^1.0.1",
