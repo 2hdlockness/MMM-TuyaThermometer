@@ -144,7 +144,7 @@ Module.register("MMM-TuyaThermometer", {
     switch(noti) {
       case "DOM_OBJECTS_CREATED":
         if (this.config.debug) logTY = (...args) => { console.log("[TUYATH]", ...args) }
-        if (this.config.updateInterval < 1) this.config.updateInterval=1
+        if (this.config.updateInterval < 5) this.config.updateInterval=5
         this.sendSocketNotification("INIT", this.config)
         break
     }
