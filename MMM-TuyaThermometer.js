@@ -28,13 +28,18 @@ Module.register("MMM-TuyaThermometer", {
   requiresVersion: "2.18.0",
 
   start: function() {
-    this.Thermometer = null
+    this.Thermometer = {
+      battery: 0,
+      temp: "--.-",
+      humidity: "--",
+      tendency: 0
+    }
   },
 
   getDom: function() {
     var wrapper = document.createElement("div")
     wrapper.id = "TUYA_THERMO"
-    wrapper.className= this.config.deviceId
+    if (this.config.display.fixed) wrapper.classList.add("fixed")
 
     var temp = document.createElement("div")
     temp.id = "TUYA_THERMO_TEMP"
@@ -53,7 +58,8 @@ Module.register("MMM-TuyaThermometer", {
 
       var tempValue = document.createElement("div")
       tempValue.id = "TUYA_THERMO_TEMP_VALUE"
-      tempValue.innerHTML = "--.-°"
+      tempValue.textContent = this.Thermometer.temp + "°"
+
       zone3.appendChild(tempValue)
 
       var empty = document.createElement("div")
@@ -69,15 +75,28 @@ Module.register("MMM-TuyaThermometer", {
       battery.id = "TUYA_THERMO_BATTERY"
       var batteryIcon = document.createElement("div")
       batteryIcon.id = "TUYA_THERMO_BATTERY_ICON"
-      
       battery.appendChild(batteryIcon)
       var batteryValue = document.createElement("div")
       batteryValue.id = "TUYA_THERMO_BATTERY_VALUE"
       battery.appendChild(batteryValue)
+      if (!this.config.display.battery) {
+        batteryValue.className = "hidden"
+        batteryIcon.className = "hidden"
+      } else {
+        batteryIcon.className = this.Thermometer.battery > 95 ? "fa fa-battery-full" :
+                                this.Thermometer.battery >= 70 ? "fa fa-battery-three-quarters" :
+                                this.Thermometer.battery >= 45 ? "fa fa-battery-half" :
+                                this.Thermometer.battery >= 15 ? "fa fa-battery-quarter" :
+                                "fa fa-battery-empty"
+        batteryValue.textContent = this.Thermometer.battery + "%"
+      }
     zone2.appendChild(battery)
 
       var tempTendency = document.createElement("div")
       tempTendency.id = "TUYA_THERMO_TEMP_TENDENCY"
+      if (!this.config.display.tendency) tempTendency.className = "hidden"
+      else tempTendency.className= this.tempTendency(this.Thermometer.tendency)
+
     zone2.appendChild(tempTendency)
 
       var humidity = document.createElement("div")
@@ -87,6 +106,13 @@ Module.register("MMM-TuyaThermometer", {
       humidity.appendChild(humidityIcon)
       var humidityValue = document.createElement("div")
       humidityValue.id = "TUYA_THERMO_HUMIDITY_VALUE"
+      if (!this.config.display.humidity) {
+        humidityValue.className = "hidden"
+        humidityIcon.className = "hidden"
+      } else {
+        humidityIcon.className= "fas fa-droplet"
+        humidityValue.textContent = this.Thermometer.humidity + "%"
+      }
       humidity.appendChild(humidityValue)
     zone2.appendChild(humidity)
 
@@ -106,7 +132,10 @@ Module.register("MMM-TuyaThermometer", {
   socketNotificationReceived: function (noti, payload) {
     switch(noti) {
       case "DATA":
-        this.updateData(payload)
+        if (!payload) return console.error("[TUYATH] No Data!")
+        this.Thermometer = payload
+        logTY("DATA:", this.Thermometer)
+        this.updateDom()
         break
     }
   },
@@ -115,43 +144,9 @@ Module.register("MMM-TuyaThermometer", {
     switch(noti) {
       case "DOM_OBJECTS_CREATED":
         if (this.config.debug) logTY = (...args) => { console.log("[TUYATH]", ...args) }
-        this.prepareDisplay()
         if (this.config.updateInterval < 1) this.config.updateInterval=1
         this.sendSocketNotification("INIT", this.config)
         break
-    }
-  },
-
-  updateData: function(data) {
-    if (!data) return console.error("[TUYATH] No Data!")
-    this.Thermometer = data
-    logTY("DATA:", this.Thermometer)
-
-    var batteryIcon = document.getElementById("TUYA_THERMO_BATTERY_ICON")
-    var batteryValue = document.getElementById("TUYA_THERMO_BATTERY_VALUE")
-    var humidityIcon = document.getElementById("TUYA_THERMO_HUMIDITY_ICON")
-    var humidityValue = document.getElementById("TUYA_THERMO_HUMIDITY_VALUE")
-    var tempTendency = document.getElementById("TUYA_THERMO_TEMP_TENDENCY")
-    var temp = document.getElementById("TUYA_THERMO_TEMP")
-    var tempValue = document.getElementById("TUYA_THERMO_TEMP_VALUE")
-
-    tempValue.textContent = this.Thermometer.temp.toFixed(1) + "°"
-    if (this.config.display.tendency) {
-      tempTendency.className= this.tempTendency(this.Thermometer.tendency)
-    }
-
-    if (this.config.display.humidity) {
-      humidityIcon.className= "fas fa-droplet"
-      humidityValue.textContent = this.Thermometer.humidity + "%"
-    }
-
-    if (this.config.display.battery) {
-      batteryIcon.className = this.Thermometer.battery > 95 ? "fa fa-battery-full" :
-                              this.Thermometer.battery >= 70 ? "fa fa-battery-three-quarters" :
-                              this.Thermometer.battery >= 45 ? "fa fa-battery-half" :
-                              this.Thermometer.battery >= 15 ? "fa fa-battery-quarter" :
-                              "fa fa-battery-empty"
-      batteryValue.textContent = this.Thermometer.battery +"%"
     }
   },
 
@@ -161,29 +156,6 @@ Module.register("MMM-TuyaThermometer", {
     else if (tendency == 2) icon = "fa fa-caret-down"
     else icon = "fa fa-caret-right"
     return icon
-  },
+  }
 
-  prepareDisplay: function() {
-    var tuya = document.getElementById("TUYA_THERMO")
-    var batteryIcon = document.getElementById("TUYA_THERMO_BATTERY_ICON")
-    var batteryValue = document.getElementById("TUYA_THERMO_BATTERY_VALUE")
-    var humidityIcon = document.getElementById("TUYA_THERMO_HUMIDITY_ICON")
-    var humidityValue = document.getElementById("TUYA_THERMO_HUMIDITY_VALUE")
-    var tempTendency = document.getElementById("TUYA_THERMO_TEMP_TENDENCY")
-
-    if (this.config.display.fixed) {
-      tuya.classList.add("fixed")
-    }
-
-    if (!this.config.display.battery) {
-      batteryIcon.className = "hidden"
-      batteryValue.className = "hidden"
-    }
-    if (!this.config.display.humidity) {
-      humidityIcon.className = "hidden"
-      humidityValue.className = "hidden"
-    }
-    if (this.config.display.tendency)
-      tempTendency.className = "hidden"
-    }
 });
