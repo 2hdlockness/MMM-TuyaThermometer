@@ -1,0 +1,123 @@
+#TUYA_THERMO {
+  color: #EEE;
+  font-size: 15px;
+  min-width: 285px;
+}
+
+#TUYA_THERMO.fixed{
+  display: inline-block;
+}
+
+#TUYA_THERMO_EMPTY,
+#TUYA_THERMO_NAME {
+  font-size: 10px;
+  height: 15px;
+}
+
+#TUYA_THERMO_TEMP {
+  border-radius: 15px;
+  font-size: 70px;
+  background: #000;
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: solid;
+}
+
+
+#TUYA_THERMO_VALUES {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+#TUYA_THERMO_HUMIDITY {
+  display: flex;
+  flex-wrap: wrap;
+  /*width: 50px;*/
+  height: 35px;
+  align-content: end;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#TUYA_THERMO_TEMPSET {
+  display: flex;
+  flex-wrap: wrap;
+ /* width: 50px; */
+  height: 50px;
+  align-content: start;
+  align-items: center;
+}
+
+#TUYA_THERMO_BATTERY {
+  justify-content: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  /*width: 50px;*/
+  height: 35px;
+  align-content: start;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#TUYA_THERMO_HUMIDITY_VALUE,
+#TUYA_THERMO_BATTERY_VALUE,
+#TUYA_THERMO_TEMPSET_VALUE {
+  margin-left: 5px;
+}
+
+#TUYA_THERMO_TEMP_TENDENCY {
+  font-size: 30px;
+  width: 20px;
+  height: 30px;
+  display: flex;
+  place-content: flex-start;
+}
+
+#TUYA_THERMO_HUMIDITY_ICON,
+#TUYA_THERMO_BATTERY_ICON,
+#TUYA_THERMO_TEMPSET_ICON {
+  font-size: small;
+}
+
+#TUYA_THERMO_TEMPSET_ICON.hidden,
+#TUYA_THERMO_TEMPSET_VALUE.hidden,
+#TUYA_THERMO_BATTERY_ICON.hidden,
+#TUYA_THERMO_BATTERY_VALUE.hidden,
+#TUYA_THERMO_HUMIDITY_ICON.hidden,
+#TUYA_THERMO_HUMIDITY_VALUE.hidden,
+#TUYA_THERMO_TEMP_TENDENCY.hidden {
+  display: none;
+}
+
+#TUYA_THERMO_ZONE1 {
+  font-size: small;
+  margin: 5px;
+  flex: 1 1 0;
+}
+
+#TUYA_THERMO_ZONE2 {
+  font-size: small;
+  margin: 5px;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  place-items: self-end;
+}
+
+#TUYA_THERMO_ZONE3 {
+  flex: 2 1 0;
+  text-align: center;
+  margin: 5px;
+}
+
+#TUYA_THERMO_TEMP_VALUE {
+  text-align: center;
+  max-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

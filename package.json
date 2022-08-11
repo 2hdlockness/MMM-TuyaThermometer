@@ -1,0 +1,13 @@
+{
+  "name": "MMM-TuyaThermometer",
+  "version": "1.0.0",
+  "description": "Display Tuya Thermostat State in MagicMirror",
+  "main": "MMM-TuyaThermometer.js",
+  "author": "@bugsounet",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "crypto": "^1.0.1",
+    "qs": "^6.11.0"
+  }
+}
