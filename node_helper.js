@@ -5,12 +5,14 @@
  * MIT Licensed.
  */
 
+"use strict"
+
 var NodeHelper = require("node_helper")
 var qs = require("qs")
 var crypto = require("crypto")
 var axios = require("axios")
 
-logTY = (...args) => { /* do nothing ! */ }
+var logTY = (...args) => { /* do nothing ! */ }
 
 module.exports = NodeHelper.create({
   start: function () {
