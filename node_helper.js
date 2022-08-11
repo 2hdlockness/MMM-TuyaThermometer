@@ -143,7 +143,7 @@ module.exports = NodeHelper.create({
   getDeviceInfo: async function (deviceId) {
     const query = {};
     const method = 'GET';
-    const url = `/v1.0/iot-03/devices/status?device_ids=${deviceId}`;
+    const url = `/v1.0/iot-03/devices/${deviceId}/status`;
     const reqHeaders = await this.getRequestSign(url, method, {}, query);
   
     const { data } = await this.httpClient.request({
@@ -159,8 +159,8 @@ module.exports = NodeHelper.create({
       error = {error: data.msg}
       return error
     }
-    logTY("Data:", data.result[0].status)
-    return data.result[0].status
+    logTY("Data "+ (this.configAPI.deviceId)+": ", data.result)
+    return data.result
   },
 
   /** Calcul moyenne temp **/
