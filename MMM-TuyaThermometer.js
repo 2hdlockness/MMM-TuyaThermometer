@@ -22,7 +22,8 @@ Module.register("MMM-TuyaThermometer", {
       name: true,
       battery: true,
       humidity: true,
-      tendency: true
+      tendency: true,
+      border: false
     }
   },
   requiresVersion: "2.20.0",
@@ -40,7 +41,7 @@ Module.register("MMM-TuyaThermometer", {
       wrapper.textContent = "MMM-TuyaThermometer Loading..."
       return wrapper
     }
-
+    if (!this.config.display.border) wrapper.classList.add("noborder")
     this.config.devices.forEach((device) => {
 
       var temp = document.createElement("div")
