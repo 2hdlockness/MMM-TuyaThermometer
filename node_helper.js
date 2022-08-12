@@ -24,33 +24,29 @@ module.exports = NodeHelper.create({
       token: null
     }
     this.httpClient = null
-    this.Thermometer= {
-      battery: null,
-      temp: null,
-      humidity: null,
-      tendency: null
-    }
-    this.tempHistory = {
-      data: [],
-      average: null,
-      lastAverage: null
-    }
+    this.Thermometers= {}
+    this.tempHistory = {}
   },
 
   socketNotificationReceived: function (noti, payload) {
     switch (noti) {
       case "INIT":
-        console.log("[TUYATH] MMM-TuyaThermostat Version:", require('./package.json').version)
+        console.log("[TUYATH] MMM-TuyaThermometer Version:", require('./package.json').version)
         this.initialize(payload)
       break
     }
   },
 
   initialize: function (config) {
+    let zone = [ "us", "eu", "in", "cn" ]
     this.config = config
     if (this.config.debug) logTY = (...args) => { console.log("[TUYATH]", ...args) }
-    console.log("[TUYATH] Starting Tuya Thermostat module...")
+    console.log("[TUYATH] Starting Tuya Thermometer module...")
     logTY("Config:", this.config)
+    if (!this.config.zone) return console.error("[TUYATH] Missing zone !")
+    if (zone.indexOf(this.config.zone) == -1) return console.error("[TUYATH] Unknow zone !")
+    if (!this.config.devices || !this.config.devices.length) return console.error("[TUYATH] Missing devices list !")
+
     this.configAPI = {
       /* openapi host */
       host: 'https://openapi.tuya'+this.config.zone+'.com',
@@ -59,10 +55,20 @@ module.exports = NodeHelper.create({
       /* fetch from openapi platform */
       secretKey: this.config.secretKey,
       /* Interface example device_ID */
-      deviceId: this.config.deviceId,
+      deviceIds: [],
       /* extra auto generate token */
       token: null
     }
+
+    if (!this.configAPI.accessKey) return console.error("[TUYATH] Missing accessKey !")
+    if (!this.configAPI.secretKey) return console.error("[TUYATH] Missing secretKey !")
+
+    this.config.devices.forEach(device => {
+      if (device.deviceId) this.configAPI.deviceIds.push(device.deviceId)
+    })
+
+    if (!this.configAPI.deviceIds.length) return console.error("[TUYATH] Missing devices list !")
+
     this.httpClient = axios.create({
       baseURL: this.configAPI.host,
       timeout: 5 * 1e3,
@@ -73,21 +79,31 @@ module.exports = NodeHelper.create({
       logTY("Updating data...")
       this.mainProcess()
     }, this.config.updateInterval*1000*60)
-
   },
 
   mainProcess: async function() {
     await this.getToken()
-    const data = await this.getDeviceInfo(this.configAPI.deviceId)
+    const data = await this.getDeviceInfo(this.configAPI.deviceIds.toString())
     if (!data.length) return console.error("[TUYATH] Error:", data.error)
-    data.forEach(value => {
-      if (value.code == "va_temperature") this.Thermometer.temp = value.value/10
-      if (value.code == "va_humidity") this.Thermometer.humidity = value.value
-      if (value.code == "battery_percentage") this.Thermometer.battery = value.value
+    data.forEach(device => {
+      if (device.id && device.status.length) {
+        let Thermometer = {
+            temp: null,
+            humidity: null,
+            battery: null,
+            tendency: null
+        }
+        device.status.forEach(value => {
+          if (value.code == "va_temperature") Thermometer.temp = value.value/10
+          if (value.code == "va_humidity") Thermometer.humidity = value.value
+          if (value.code == "battery_percentage") Thermometer.battery = value.value
+        })
+        this.Thermometers[device.id] = Thermometer
+        this.Thermometers[device.id].tendency = this.averageTemp(this.Thermometers[device.id].temp, device.id)
+      }
     })
-    this.Thermometer.tendency= this.averageTemp(this.Thermometer.temp)
-    logTY("Fetch success !", this.Thermometer)
-    this.sendSocketNotification("DATA", this.Thermometer)
+    logTY("Fetch success !", this.Thermometers)
+    this.sendSocketNotification("DATA", this.Thermometers)
     
   },
 
@@ -111,7 +127,7 @@ module.exports = NodeHelper.create({
       return console.error(`[TUYATH] fetch failed: ${login.msg}`)
     }
     this.configAPI.token = login.result.access_token
-    logTY("Token:", this.configAPI.token)
+    logTY("configAPI:", this.configAPI)
   },
 
   encryptStr: async function (str, secret) {
@@ -142,11 +158,11 @@ module.exports = NodeHelper.create({
     }
   },
 
-  getDeviceInfo: async function (deviceId) {
-    const query = {};
-    const method = 'GET';
-    const url = `/v1.0/iot-03/devices/${deviceId}/status`;
-    const reqHeaders = await this.getRequestSign(url, method, {}, query);
+  getDeviceInfo: async function (deviceIds) {
+    const query = {}
+    const method = 'GET'
+    const url = `/v1.0/iot-03/devices/status?device_ids=${deviceIds}`
+    const reqHeaders = await this.getRequestSign(url, method, {}, query)
   
     const { data } = await this.httpClient.request({
       method,
@@ -154,35 +170,37 @@ module.exports = NodeHelper.create({
       params: {},
       headers: reqHeaders,
       url: reqHeaders.path,
-    });
+    })
 
     if (!data || !data.success) {
       console.error(`[TUYATH] request api failed: ${data.msg}`)
-      error = {error: data.msg}
+      let error = {error: data.msg}
       return error
     }
-    logTY("Data "+ (this.configAPI.deviceId)+": ", data.result)
+    logTY("Data: ", data.result)
     return data.result
   },
 
   /** Calcul moyenne temp **/
-  averageTemp: function(temp) {
-    if (!temp) return
+  averageTemp: function(temp,device) {
+    if (!temp || !device) return
     let average = 0
+    if (!this.tempHistory[device]) this.tempHistory[device] = []
+    if (!this.tempHistory[device].data) this.tempHistory[device].data = []
     /** do Array of last 10 Temp **/
-    if (this.tempHistory.data.length >= 10) this.tempHistory.data.splice(0,1)
-    this.tempHistory.data.push(temp)
+    if (this.tempHistory[device].data.length >= 10) this.tempHistory[device].data.splice(0,1)
+    this.tempHistory[device].data.push(temp)
 
     /** do the average **/
-    this.tempHistory.data.forEach(value => {
+    this.tempHistory[device].data.forEach(value => {
       average += value
     })
-    average = (average/this.tempHistory.data.length).toFixed(1)
-    this.tempHistory.lastAverage = this.tempHistory.average ? this.tempHistory.average: average
-    this.tempHistory.average= average
-    logTY("tempHistory:", this.tempHistory)
-    if (this.tempHistory.average > this.tempHistory.lastAverage) return 1
-    if (this.tempHistory.average < this.tempHistory.lastAverage) return 2
+    average = (average/this.tempHistory[device].data.length).toFixed(1)
+    this.tempHistory[device].lastAverage = this.tempHistory[device].average ? this.tempHistory[device].average: average
+    this.tempHistory[device].average= average
+    logTY("tempHistory for " + device + ":", this.tempHistory[device])
+    if (this.tempHistory[device].average > this.tempHistory[device].lastAverage) return 1
+    if (this.tempHistory[device].average < this.tempHistory[device].lastAverage) return 2
     return 0
   }
 });

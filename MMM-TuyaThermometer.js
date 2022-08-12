@@ -10,115 +10,109 @@ logTY = (...args) => { /* do nothing */ }
 
 Module.register("MMM-TuyaThermometer", {
   defaults: {
-    debug: true,
+    debug: false,
     accessKey: null,
     secretKey: null,
     deviceId: null,
     zone: "eu",
-    name: "Thermometer name",
     updateInterval: 15,
+    devices: [],
     display: {
-      fixed: true,
+      fixed: false,
       name: true,
       battery: true,
       humidity: true,
       tendency: true
     }
   },
-  requiresVersion: "2.18.0",
+  requiresVersion: "2.20.0",
 
   start: function() {
-    this.Thermometer = {
-      battery: 0,
-      temp: "--.-",
-      humidity: "--",
-      tendency: 0
-    }
+    this.Thermometers = null
+    this.init = false
   },
 
   getDom: function() {
     var wrapper = document.createElement("div")
     wrapper.id = "TUYA_THERMO"
     if (this.config.display.fixed) wrapper.classList.add("fixed")
+    if (!this.Thermometers) {
+      wrapper.textContent = "MMM-TuyaThermometer Loading..."
+      return wrapper
+    }
 
-    var temp = document.createElement("div")
-    temp.id = "TUYA_THERMO_TEMP"
+    this.config.devices.forEach((device) => {
+
+      var temp = document.createElement("div")
+      temp.id = "TUYA_THERMO_TEMP"
+
       var zone1 = document.createElement("div")
-      zone1.id = "TUYA_THERMO_ZONE1"
+        zone1.id = "TUYA_THERMO_ZONE1"
 
-    temp.appendChild(zone1)
+        var name = document.createElement("div")
+        name.id = "TUYA_THERMO_NAME"
+        if (this.config.display.name) name.textContent = device.name
+        zone1.appendChild(name)
 
-    var zone3 = document.createElement("div")
-      zone3.id = "TUYA_THERMO_ZONE3"
+        var tempValue = document.createElement("div")
+        tempValue.id = "TUYA_THERMO_TEMP_VALUE"
+        tempValue.textContent = this.Thermometers[device.deviceId].temp.toFixed(1) + "°"
 
-      var name = document.createElement("div")
-      name.id = "TUYA_THERMO_NAME"
-      if (this.config.display.name) name.textContent = this.config.name
-      zone3.appendChild(name)
+        zone1.appendChild(tempValue)
 
-      var tempValue = document.createElement("div")
-      tempValue.id = "TUYA_THERMO_TEMP_VALUE"
-      tempValue.textContent = this.Thermometer.temp + "°"
+      temp.appendChild(zone1)
 
-      zone3.appendChild(tempValue)
+      var zone2 = document.createElement("div")
+      zone2.id = "TUYA_THERMO_ZONE2"
 
-      var empty = document.createElement("div")
-      empty.id = "TUYA_THERMO_EMPTY"
-      zone3.appendChild(empty)
+        var battery = document.createElement("div")
+        battery.id = "TUYA_THERMO_BATTERY"
+        var batteryIcon = document.createElement("div")
+        batteryIcon.id = "TUYA_THERMO_BATTERY_ICON"
+        battery.appendChild(batteryIcon)
+        var batteryValue = document.createElement("div")
+        batteryValue.id = "TUYA_THERMO_BATTERY_VALUE"
+        battery.appendChild(batteryValue)
+        if (!this.config.display.battery) {
+          batteryValue.className = "hidden"
+          batteryIcon.className = "hidden"
+        } else {
+          batteryIcon.className = this.Thermometers[device.deviceId].battery > 95 ? "fa fa-battery-full" :
+                                  this.Thermometers[device.deviceId].battery >= 70 ? "fa fa-battery-three-quarters" :
+                                  this.Thermometers[device.deviceId].battery >= 45 ? "fa fa-battery-half" :
+                                  this.Thermometers[device.deviceId].battery >= 15 ? "fa fa-battery-quarter" :
+                                  "fa fa-battery-empty"
+          batteryValue.textContent = this.Thermometers[device.deviceId].battery + "%"
+        }
+      zone2.appendChild(battery)
 
-    temp.appendChild(zone3)
+        var tempTendency = document.createElement("div")
+        tempTendency.id = "TUYA_THERMO_TEMP_TENDENCY"
+        if (!this.config.display.tendency) tempTendency.className = "hidden"
+        else tempTendency.className= this.tempTendency(this.Thermometers[device.deviceId].tendency)
 
-    var zone2 = document.createElement("div")
-    zone2.id = "TUYA_THERMO_ZONE2"
+      zone2.appendChild(tempTendency)
 
-      var battery = document.createElement("div")
-      battery.id = "TUYA_THERMO_BATTERY"
-      var batteryIcon = document.createElement("div")
-      batteryIcon.id = "TUYA_THERMO_BATTERY_ICON"
-      battery.appendChild(batteryIcon)
-      var batteryValue = document.createElement("div")
-      batteryValue.id = "TUYA_THERMO_BATTERY_VALUE"
-      battery.appendChild(batteryValue)
-      if (!this.config.display.battery) {
-        batteryValue.className = "hidden"
-        batteryIcon.className = "hidden"
-      } else {
-        batteryIcon.className = this.Thermometer.battery > 95 ? "fa fa-battery-full" :
-                                this.Thermometer.battery >= 70 ? "fa fa-battery-three-quarters" :
-                                this.Thermometer.battery >= 45 ? "fa fa-battery-half" :
-                                this.Thermometer.battery >= 15 ? "fa fa-battery-quarter" :
-                                "fa fa-battery-empty"
-        batteryValue.textContent = this.Thermometer.battery + "%"
-      }
-    zone2.appendChild(battery)
+        var humidity = document.createElement("div")
+        humidity.id = "TUYA_THERMO_HUMIDITY"
+        var humidityIcon = document.createElement("div")
+        humidityIcon.id = "TUYA_THERMO_HUMIDITY_ICON"
+        humidity.appendChild(humidityIcon)
+        var humidityValue = document.createElement("div")
+        humidityValue.id = "TUYA_THERMO_HUMIDITY_VALUE"
+        if (!this.config.display.humidity) {
+          humidityValue.className = "hidden"
+          humidityIcon.className = "hidden"
+        } else {
+          humidityIcon.className= "fas fa-droplet"
+          humidityValue.textContent = this.Thermometers[device.deviceId].humidity + "%"
+        }
+        humidity.appendChild(humidityValue)
+      zone2.appendChild(humidity)
 
-      var tempTendency = document.createElement("div")
-      tempTendency.id = "TUYA_THERMO_TEMP_TENDENCY"
-      if (!this.config.display.tendency) tempTendency.className = "hidden"
-      else tempTendency.className= this.tempTendency(this.Thermometer.tendency)
-
-    zone2.appendChild(tempTendency)
-
-      var humidity = document.createElement("div")
-      humidity.id = "TUYA_THERMO_HUMIDITY"
-      var humidityIcon = document.createElement("div")
-      humidityIcon.id = "TUYA_THERMO_HUMIDITY_ICON"
-      humidity.appendChild(humidityIcon)
-      var humidityValue = document.createElement("div")
-      humidityValue.id = "TUYA_THERMO_HUMIDITY_VALUE"
-      if (!this.config.display.humidity) {
-        humidityValue.className = "hidden"
-        humidityIcon.className = "hidden"
-      } else {
-        humidityIcon.className= "fas fa-droplet"
-        humidityValue.textContent = this.Thermometer.humidity + "%"
-      }
-      humidity.appendChild(humidityValue)
-    zone2.appendChild(humidity)
-
-    temp.appendChild(zone2)
-    wrapper.appendChild(temp)
-
+      temp.appendChild(zone2)
+      wrapper.appendChild(temp)
+    })
     return wrapper
   },
 
@@ -133,8 +127,8 @@ Module.register("MMM-TuyaThermometer", {
     switch(noti) {
       case "DATA":
         if (!payload) return console.error("[TUYATH] No Data!")
-        this.Thermometer = payload
-        logTY("DATA:", this.Thermometer)
+        this.Thermometers = payload
+        logTY("DATA:", this.Thermometers)
         this.updateDom()
         break
     }
@@ -144,7 +138,7 @@ Module.register("MMM-TuyaThermometer", {
     switch(noti) {
       case "DOM_OBJECTS_CREATED":
         if (this.config.debug) logTY = (...args) => { console.log("[TUYATH]", ...args) }
-        if (this.config.updateInterval < 5) this.config.updateInterval=5
+        if (this.config.updateInterval < 15) this.config.updateInterval=15
         this.sendSocketNotification("INIT", this.config)
         break
     }
