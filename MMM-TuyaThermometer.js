@@ -58,6 +58,32 @@ Module.register("MMM-TuyaThermometer", {
         var tempValue = document.createElement("div")
         tempValue.id = "TUYA_THERMO_TEMP_VALUE"
         tempValue.textContent = this.Thermometers[device.deviceId].temp.toFixed(1) + "°"
+		
+		// 🔹 Ajoute cette condition pour "Salon" 🔹
+		if (device.deviceId === 'bf2c9f492eddea90eam4z3') {
+			name.classList.add("salon-thermo"); // Applique la classe CSS au nom
+			tempValue.classList.add("salon-thermo"); // Applique la classe CSS à la température
+		}
+		// 🔹 Ajoute cette condition pour "Extérieur" 🔹
+		else if (device.deviceId === 'bf50c6b070de093f37jvdx') {
+			name.classList.add("exterieur-thermo"); // Applique la classe CSS au nom
+			tempValue.classList.add("exterieur-thermo"); // Applique la classe CSS à la température
+		}
+		// 🔹 Ajoute cette condition pour "Chambre" 🔹
+		else if (device.deviceId === 'bffea0add69bd6939afgwh') {
+			name.classList.add("chambre-thermo"); // Applique la classe CSS au nom
+			tempValue.classList.add("chambre-thermo"); // Applique la classe CSS à la température
+		}
+		// 🔹 Ajoute cette condition pour "Chambre Noa" 🔹
+		else if (device.deviceId === 'bf47eeedfc2c884d42cmlx') {
+			name.classList.add("chambreNoa-thermo"); // Applique la classe CSS au nom
+			tempValue.classList.add("chambreNoa-thermo"); // Applique la classe CSS à la température
+		}			
+		// 🔹 Ajoute cette condition pour "Chambre Elena" 🔹
+		else if (device.deviceId === 'bf4388f9a52b32191czwlf') {
+			name.classList.add("chambreElena-thermo"); // Applique la classe CSS au nom
+			tempValue.classList.add("chambreElena-thermo"); // Applique la classe CSS à la température
+		}	
 
         zone1.appendChild(tempValue)
 
@@ -78,12 +104,17 @@ Module.register("MMM-TuyaThermometer", {
           batteryValue.className = "hidden"
           batteryIcon.className = "hidden"
         } else {
-          batteryIcon.className = this.Thermometers[device.deviceId].battery > 95 ? "fa fa-battery-full" :
-                                  this.Thermometers[device.deviceId].battery >= 70 ? "fa fa-battery-three-quarters" :
-                                  this.Thermometers[device.deviceId].battery >= 45 ? "fa fa-battery-half" :
-                                  this.Thermometers[device.deviceId].battery >= 15 ? "fa fa-battery-quarter" :
-                                  "fa fa-battery-empty"
-          batteryValue.textContent = this.Thermometers[device.deviceId].battery + "%"
+		let batteryLevel = this.Thermometers[device.deviceId].battery
+		if (typeof batteryLevel === "string") { 
+			batteryLevel = batteryLevel === "high" ? 100 : batteryLevel === "middle" ? 50 : 10 
+		}
+		batteryIcon.className = batteryLevel > 95 ? "fa fa-battery-full" :
+								batteryLevel >= 70 ? "fa fa-battery-three-quarters" :
+								batteryLevel >= 45 ? "fa fa-battery-half" :
+								batteryLevel >= 15 ? "fa fa-battery-quarter" :
+								"fa fa-battery-empty"
+		batteryValue.textContent = batteryLevel + "%"
+
         }
       zone2.appendChild(battery)
 
