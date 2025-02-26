@@ -94,9 +94,16 @@ module.exports = NodeHelper.create({
             tendency: null
         }
         device.status.forEach(value => {
-          if (value.code == "va_temperature") Thermometer.temp = value.value/10
-          if (value.code == "va_humidity") Thermometer.humidity = value.value
-          if (value.code == "battery_percentage") Thermometer.battery = value.value
+if (value.code == "va_temperature" || value.code == "temp_current") 
+    Thermometer.temp = value.value / 10
+if (value.code == "va_humidity" || value.code == "humidity_value") 
+    Thermometer.humidity = value.value
+if (value.code == "battery_percentage") 
+    Thermometer.battery = value.value
+if (value.code == "battery_state") { 
+    Thermometer.battery = value.value === "high" ? 100 : value.value === "middle" ? 50 : 10
+}
+
         })
         this.Thermometers[device.id] = Thermometer
         this.Thermometers[device.id].tendency = this.averageTemp(this.Thermometers[device.id].temp, device.id)
